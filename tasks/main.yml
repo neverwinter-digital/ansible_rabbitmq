@@ -1,0 +1,60 @@
+---
+# tasks file for ansible_rabbitmq
+
+- name: add rabbitmq official erlang repository
+  yum_repository: 
+    name: rabbitmq-erlang
+    baseurl: https://dl.bintray.com/rabbitmq/rpm/erlang/20/el/7
+    description: Rabbitmq Only Erlang REPO
+    gpgcheck: yes
+    gpgkey: https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+    repo_gpgcheck: no
+    enabled: yes
+
+- name: install erlang package
+  yum: 
+    name: erlang
+
+- name: add rpm key 
+  rpm_key:
+    key: https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+
+- name: download rabbitmq package
+  get_url:
+    url: https://bintray.com/rabbitmq/rabbitmq-server-rpm/download_file?file_path=rabbitmq-server-3.6.10-1.el7.noarch.rpm
+    dest: /home/deployer/rabbitmq-server-3.6.10-1.noarch.rpm
+
+- name: install rabbitmq package
+  yum: 
+    name: /home/deployer/rabbitmq-server-3.6.10-1.noarch.rpm
+
+- name: enable rabbitmq plugins
+  rabbitmq_plugin: names=rabbitmq_management,rabbitmq_tracing,rabbitmq_federation state=enabled
+  notify:
+  - restart rabbitmq
+
+- name: add users
+  rabbitmq_user: user={{item}} password=changeme tags=administrator,{{item}} vhost=/ configure_priv=.* write_priv=.* read_priv=.* state=present
+  with_items:
+  - admin
+  - tester
+
+- name: remove default guest user
+  rabbitmq_user: user=guest state=absent
+
+- name: ensure vhost /test is present
+  rabbitmq_vhost: name=/test state=present
+
+- name: open ports for rabbitmq
+  firewalld: 
+    port: "{{item}}"
+    permanent: true 
+    zone: public
+    state: enabled
+  with_items:
+    - 4369/tcp
+    - 5672/tcp
+    - 5671/tcp
+    - 15672/tcp
+  notify: 
+    - reload firewalld

@@ -1,0 +1,10 @@
+---
+# handlers file for ansible_rabbitmq
+- name: restart rabbitmq
+  service: 
+    name: rabbitmq-server 
+    state: restarted
+
+- name: reload firewalld
+  shell: firewall-cmd --reload
+  

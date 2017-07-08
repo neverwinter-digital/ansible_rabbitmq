@@ -1,0 +1,6 @@
+---
+# defaults file for ansible_rabbitmq
+# change this won't make changes 
+rabbitmq_version: 3.6.10-1
+
+
